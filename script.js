@@ -98,4 +98,19 @@ function restartGame() {
     <p>Choose difficulty:</p>
     <button onclick="startGame('easy')">Easy</button>
     <button onclick="startGame('medium')">Medium</button>
-    <button onclick="startGame('
+    <button onclick="startGame('hard')">Hard</button>
+  `;
+  messageBox.innerHTML = '';
+}
+
+// Set up event listener for the user input
+userInput.addEventListener('input', checkAnswer);
+
+// Initialize the game
+difficultySelection.innerHTML = `
+  <h1>Choose Difficulty</h1>
+  <button onclick="startGame('easy')">Easy</button>
+  <button onclick="startGame('medium')">Medium</button>
+  <button onclick="startGame('hard')">Hard</button>
+`;
+
