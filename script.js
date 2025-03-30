@@ -1,88 +1,101 @@
-// game.js - Main JavaScript logic for the Compound Noun Quiz PWA
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(registration => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      })
+      .catch(error => {
+        console.log('Service Worker registration failed:', error);
+      });
+  });
+}
 
-document.addEventListener("DOMContentLoaded", () => {
-    let difficulty = "";
-    let chain = [];
-    let currentQuestionIndex = 0;
-    let revealedLetters = [];
-    
-    const difficultySelection = document.getElementById("difficulty-selection");
-    const gameContainer = document.getElementById("game-container");
-    const questionText = document.getElementById("question-text");
-    const userInput = document.getElementById("user-input");
-    const submitButton = document.getElementById("submit-button");
-    const hintButton = document.getElementById("hint-button");
-    const restartButton = document.getElementById("restart-button");
-    const messageBox = document.getElementById("message-box");
-    
-    document.getElementById("easy").addEventListener("click", () => startGame("easy"));
-    document.getElementById("medium").addEventListener("click", () => startGame("medium"));
-    document.getElementById("hard").addEventListener("click", () => startGame("hard"));
-    restartButton.addEventListener("click", () => location.reload());
-    submitButton.addEventListener("click", checkAnswer);
-    hintButton.addEventListener("click", revealHint);
-    
-    function startGame(selectedDifficulty) {
-        difficulty = selectedDifficulty;
-        difficultySelection.style.display = "none";
-        gameContainer.style.display = "block";
-        generateRandomChain();
-    }
-    
-    function generateRandomChain() {
-        const sampleChains = {
-            easy: [["bat", "man"], ["man", "cave"], ["cave", "bat"], ["bat", "wing"], ["wing", "nut"]],
-            medium: [["table", "cloth"], ["cloth", "hanger"], ["hanger", "rod"], ["rod", "iron"], ["iron", "gate"]],
-            hard: [["program", "music"], ["music", "box"], ["box", "office"], ["office", "furniture"], ["furniture", "company"]]
-        };
-        chain = sampleChains[difficulty];
-        currentQuestionIndex = 0;
-        askQuestion();
-    }
-    
-    function askQuestion() {
-        if (currentQuestionIndex >= chain.length - 1) {
-            messageBox.innerText = "Congratulations! You've completed the quiz!";
-            return;
-        }
-        
-        let firstWord = chain[currentQuestionIndex][0];
-        let missingWord = chain[currentQuestionIndex][1];
-        let nextWord = chain[currentQuestionIndex + 1][1];
-        revealedLetters = new Array(missingWord.length).fill("_");
-        
-        questionText.innerText = `What is the second word: ${firstWord} ${revealedLetters.join('')} -> ${revealedLetters.join('')} ${nextWord}?`;
-        userInput.value = "";
-    }
-    
-    function checkAnswer() {
-        let correctWord = chain[currentQuestionIndex][1];
-        let userAnswer = userInput.value.trim().toLowerCase();
-        
-        if (userAnswer === "iamacheater") {
-            messageBox.innerText = `Cheater! The full chain is: ${chain.map(pair => pair.join(" -> ")).join(", ")}`;
-            return;
-        }
-        
-        if (userAnswer === correctWord) {
-            messageBox.innerText = "Correct!";
-            currentQuestionIndex += 1;
-            askQuestion();
-        } else {
-            messageBox.innerText = "Try again!";
-        }
-    }
-    
-    function revealHint() {
-        let correctWord = chain[currentQuestionIndex][1];
-        let unrevealedIndices = revealedLetters.map((char, i) => (char === "_" ? i : -1)).filter(i => i !== -1);
-        
-        if (unrevealedIndices.length > 1) {
-            let randomIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
-            revealedLetters[randomIndex] = correctWord[randomIndex];
-            questionText.innerText = `What is the second word: ${chain[currentQuestionIndex][0]} ${revealedLetters.join('')} -> ${revealedLetters.join('')} ${chain[currentQuestionIndex + 1][1]}?`;
-        } else {
-            messageBox.innerText = "You must guess at least one letter!";
-        }
-    }
-});
+// Sample Game Logic (You can add your existing game logic here)
+const difficultySelection = document.getElementById('difficulty-selection');
+const gameContainer = document.getElementById('game-container');
+const messageBox = document.getElementById('message-box');
+const userInput = document.getElementById('user-input');
+
+const words = {
+  easy: [
+    ["bat", "man"],
+    ["man", "cave"],
+    ["cave", "bat"],
+    ["bat", "wing"],
+    ["wing", "nut"]
+  ],
+  medium: [
+    ["table", "cloth"],
+    ["cloth", "hanger"],
+    ["hanger", "rod"],
+    ["rod", "iron"],
+    ["iron", "gate"]
+  ],
+  hard: [
+    ["program", "music"],
+    ["music", "box"],
+    ["box", "office"],
+    ["office", "furniture"],
+    ["furniture", "company"]
+  ]
+};
+
+let currentChain = [];
+let currentWordIndex = 0;
+let difficulty = 'easy';
+
+function startGame() {
+  // Clear previous game state
+  currentChain = generateRandomChain(difficulty);
+  currentWordIndex = 0;
+  showNextQuestion();
+}
+
+function generateRandomChain(difficulty) {
+  const wordList = words[difficulty];
+  let chain = [];
+  let randomStart = wordList[Math.floor(Math.random() * wordList.length)];
+  chain.push(randomStart);
+
+  for (let i = 0; i < 9; i++) {
+    let nextWordPair = wordList[Math.floor(Math.random() * wordList.length)];
+    chain.push(nextWordPair);
+  }
+
+  return chain;
+}
+
+function showNextQuestion() {
+  if (currentWordIndex < currentChain.length - 1) {
+    const currentPair = currentChain[currentWordIndex];
+    const nextPair = currentChain[currentWordIndex + 1];
+    messageBox.innerHTML = `What is the second word: ${currentPair[0]} ____ -> ____ ${nextPair[1]}?`;
+
+    userInput.value = '';
+    userInput.focus();
+  } else {
+    messageBox.innerHTML = "Congratulations, you've completed the game!";
+    gameContainer.innerHTML += "<button onclick='restartGame()'>Play Again</button>";
+  }
+}
+
+function checkAnswer() {
+  const answer = userInput.value.trim().toLowerCase();
+  const correctAnswer = currentChain[currentWordIndex][1];
+
+  if (answer === correctAnswer) {
+    currentWordIndex++;
+    showNextQuestion();
+  } else {
+    messageBox.innerHTML = "Incorrect. Try again!";
+  }
+}
+
+function restartGame() {
+  gameContainer.innerHTML = `
+    <h1>Welcome to Compound Noun Quiz</h1>
+    <p>Choose difficulty:</p>
+    <button onclick="startGame('easy')">Easy</button>
+    <button onclick="startGame('medium')">Medium</button>
+    <button onclick="startGame('
