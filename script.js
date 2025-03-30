@@ -1,105 +1,88 @@
+// game.js - Main JavaScript logic for the Compound Noun Quiz PWA
+
 document.addEventListener("DOMContentLoaded", () => {
-    let words = [];
+    let difficulty = "";
     let chain = [];
     let currentQuestionIndex = 0;
     let revealedLetters = [];
-    let maxHints;
-
-    async function loadWords() {
-        try {
-            const response = await fetch("words.json");
-            words = await response.json();
-        } catch (error) {
-            console.error("Error loading words:", error);
-        }
+    
+    const difficultySelection = document.getElementById("difficulty-selection");
+    const gameContainer = document.getElementById("game-container");
+    const questionText = document.getElementById("question-text");
+    const userInput = document.getElementById("user-input");
+    const submitButton = document.getElementById("submit-button");
+    const hintButton = document.getElementById("hint-button");
+    const restartButton = document.getElementById("restart-button");
+    const messageBox = document.getElementById("message-box");
+    
+    document.getElementById("easy").addEventListener("click", () => startGame("easy"));
+    document.getElementById("medium").addEventListener("click", () => startGame("medium"));
+    document.getElementById("hard").addEventListener("click", () => startGame("hard"));
+    restartButton.addEventListener("click", () => location.reload());
+    submitButton.addEventListener("click", checkAnswer);
+    hintButton.addEventListener("click", revealHint);
+    
+    function startGame(selectedDifficulty) {
+        difficulty = selectedDifficulty;
+        difficultySelection.style.display = "none";
+        gameContainer.style.display = "block";
+        generateRandomChain();
     }
-
-    function generateRandomChain(difficulty) {
-        let filteredWords = words.filter(w => {
-            let len = w.split(" ")[0].length;
-            return (difficulty === "easy" && len <= 4) ||
-                   (difficulty === "medium" && len >= 4 && len <= 6) ||
-                   (difficulty === "hard" && len >= 5);
-        });
-        
-        if (filteredWords.length < 10) {
-            console.error("Not enough words for difficulty.");
-            return;
-        }
-
-        let startWord = filteredWords[Math.floor(Math.random() * filteredWords.length)];
-        chain = [startWord];
-
-        for (let i = 1; i < 10; i++) {
-            let nextWord = filteredWords.find(w => w.startsWith(chain[i - 1].split(" ")[1]));
-            if (!nextWord) break;
-            chain.push(nextWord);
-        }
-
-        if (chain.length === 10) {
-            startQuiz();
-        } else {
-            generateRandomChain(difficulty);
-        }
-    }
-
-    function startQuiz() {
+    
+    function generateRandomChain() {
+        const sampleChains = {
+            easy: [["bat", "man"], ["man", "cave"], ["cave", "bat"], ["bat", "wing"], ["wing", "nut"]],
+            medium: [["table", "cloth"], ["cloth", "hanger"], ["hanger", "rod"], ["rod", "iron"], ["iron", "gate"]],
+            hard: [["program", "music"], ["music", "box"], ["box", "office"], ["office", "furniture"], ["furniture", "company"]]
+        };
+        chain = sampleChains[difficulty];
         currentQuestionIndex = 0;
-        showQuestion();
+        askQuestion();
     }
-
-    function showQuestion() {
+    
+    function askQuestion() {
         if (currentQuestionIndex >= chain.length - 1) {
-            document.getElementById("quiz-container").innerHTML = "<h2>Game Over! Want to play again?</h2>";
+            messageBox.innerText = "Congratulations! You've completed the quiz!";
             return;
         }
-
-        let firstWord = chain[currentQuestionIndex].split(" ")[0];
-        let missingWord = chain[currentQuestionIndex].split(" ")[1];
-        let nextWord = chain[currentQuestionIndex + 1].split(" ")[1];
-
-        revealedLetters = new Array(missingWord.length).fill("_");
-        maxHints = missingWord.length - 1;
-
-        document.getElementById("question").innerHTML = 
-            `${firstWord} ${revealedLetters.join('')} -> ${revealedLetters.join('')} ${nextWord}`;
-    }
-
-    function checkAnswer() {
-        let input = document.getElementById("answer").value.toLowerCase();
-        let correctAnswer = chain[currentQuestionIndex].split(" ")[1].toLowerCase();
         
-        if (input === "iamacheater") {
-            document.getElementById("quiz-container").innerHTML = chain.join(" -> ");
+        let firstWord = chain[currentQuestionIndex][0];
+        let missingWord = chain[currentQuestionIndex][1];
+        let nextWord = chain[currentQuestionIndex + 1][1];
+        revealedLetters = new Array(missingWord.length).fill("_");
+        
+        questionText.innerText = `What is the second word: ${firstWord} ${revealedLetters.join('')} -> ${revealedLetters.join('')} ${nextWord}?`;
+        userInput.value = "";
+    }
+    
+    function checkAnswer() {
+        let correctWord = chain[currentQuestionIndex][1];
+        let userAnswer = userInput.value.trim().toLowerCase();
+        
+        if (userAnswer === "iamacheater") {
+            messageBox.innerText = `Cheater! The full chain is: ${chain.map(pair => pair.join(" -> ")).join(", ")}`;
             return;
         }
-
-        if (input === correctAnswer) {
-            currentQuestionIndex += 2;
-            showQuestion();
+        
+        if (userAnswer === correctWord) {
+            messageBox.innerText = "Correct!";
+            currentQuestionIndex += 1;
+            askQuestion();
         } else {
-            alert("Incorrect, try again!");
+            messageBox.innerText = "Try again!";
         }
     }
-
+    
     function revealHint() {
-        let correctAnswer = chain[currentQuestionIndex].split(" ")[1];
-        let unrevealed = revealedLetters.map((c, i) => c === "_" ? i : -1).filter(i => i !== -1);
-
-        if (unrevealed.length > 1) {
-            let randomIndex = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-            revealedLetters[randomIndex] = correctAnswer[randomIndex];
-            document.getElementById("question").innerHTML = revealedLetters.join(' ');
+        let correctWord = chain[currentQuestionIndex][1];
+        let unrevealedIndices = revealedLetters.map((char, i) => (char === "_" ? i : -1)).filter(i => i !== -1);
+        
+        if (unrevealedIndices.length > 1) {
+            let randomIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
+            revealedLetters[randomIndex] = correctWord[randomIndex];
+            questionText.innerText = `What is the second word: ${chain[currentQuestionIndex][0]} ${revealedLetters.join('')} -> ${revealedLetters.join('')} ${chain[currentQuestionIndex + 1][1]}?`;
+        } else {
+            messageBox.innerText = "You must guess at least one letter!";
         }
     }
-
-    document.getElementById("start-btn").addEventListener("click", () => {
-        let difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-        generateRandomChain(difficulty);
-    });
-
-    document.getElementById("submit-btn").addEventListener("click", checkAnswer);
-    document.getElementById("hint-btn").addEventListener("click", revealHint);
-
-    loadWords();
 });
