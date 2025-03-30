@@ -1,0 +1,23 @@
+{
+  "easy": [
+    ["bat", "man"],
+    ["man", "cave"],
+    ["cave", "bat"],
+    ["bat", "wing"],
+    ["wing", "nut"]
+  ],
+  "medium": [
+    ["table", "cloth"],
+    ["cloth", "hanger"],
+    ["hanger", "rod"],
+    ["rod", "iron"],
+    ["iron", "gate"]
+  ],
+  "hard": [
+    ["program", "music"],
+    ["music", "box"],
+    ["box", "office"],
+    ["office", "furniture"],
+    ["furniture", "company"]
+  ]
+}
